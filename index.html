@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Expense & Payment Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div>
+        <h1>Smart Expense & Payment Tracker</h1>
+        <p class="subtle">Simulated payments - track spending vs budget in real time</p>
+      </div>
+
+      <nav class="app-nav" aria-label="Primary">
+        <a href="#dashboard" class="nav-link" data-page-link="dashboard">Dashboard</a>
+        <a href="#pay" class="nav-link" data-page-link="pay">Pay</a>
+        <a href="#budget" class="nav-link" data-page-link="budget">Budget</a>
+        <a href="#transactions" class="nav-link" data-page-link="transactions">Transactions</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card app-page active" id="page-dashboard" data-page="dashboard" aria-label="Dashboard">
+      <div class="card-header">
+        <h2>Dashboard</h2>
+      </div>
+
+      <div class="summary grid-3">
+        <div class="stat">
+          <div class="stat-label">Total Spending</div>
+          <div class="stat-value" id="totalSpending">Rs. 0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Remaining Budget</div>
+          <div class="stat-value" id="remainingBudget">Rs. 0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Budget Usage</div>
+          <div class="stat-value" id="usagePercent">0%</div>
+        </div>
+      </div>
+
+      <div class="grid-2 gap-lg">
+        <div>
+          <h3 class="section-title">Category-wise Expenses</h3>
+          <div class="table-wrap">
+            <table class="table" id="categorySummaryTable">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Spent</th>
+                  <th>Budget (if set)</th>
+                  <th>Remaining</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="section-title">Spending by Category (Chart)</h3>
+          <div class="chart-card">
+            <canvas id="categoryChart" width="420" height="260" aria-label="Category chart" role="img"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card app-page" id="page-pay" data-page="pay" aria-label="Payment">
+      <div class="card-header">
+        <h2>Payment + Budget Check</h2>
+      </div>
+
+      <div class="grid-2 gap-lg">
+        <div>
+          <div class="wallet-card" aria-label="Wallet balance">
+            <div class="wallet-row">
+              <div>
+                <div class="wallet-label">Wallet Balance</div>
+                <div class="wallet-value" id="walletBalance">Rs. 0.00</div>
+              </div>
+              <div>
+                <div class="wallet-sub">Simulated balance</div>
+              </div>
+            </div>
+            <div class="wallet-actions">
+              <label class="wallet-set">
+                Add Rs.
+                <input id="walletTopUp" type="number" min="0" step="0.01" placeholder="e.g., 500" />
+              </label>
+              <button class="btn primary" type="button" id="walletTopUpBtn">Top Up</button>
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top:14px">Payment Details</div>
+          <form id="txForm" class="grid-2" autocomplete="off">
+            <label>
+              Amount
+              <input id="amount" type="number" min="0" step="0.01" required />
+            </label>
+
+            <label>
+              Category
+              <select id="category" required>
+                <option value="Food">Food</option>
+                <option value="Travel">Travel</option>
+                <option value="Bills">Bills</option>
+                <option value="Health">Health</option>
+                <option value="Education">Education</option>
+                <option value="Other" selected>Other</option>
+              </select>
+            </label>
+
+            <label>
+              Date
+              <input id="date" type="date" required />
+            </label>
+
+            <label>
+              Payment method
+              <select id="paymentMethod" required>
+                <option value="Cash">Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="Card">Card</option>
+              </select>
+            </label>
+
+            <label>
+              UPI ID (optional)
+              <input id="upiId" type="text" maxlength="60" placeholder="e.g., name@bank" />
+            </label>
+
+            <label>
+              Note / Reference (optional)
+              <input id="txRef" type="text" maxlength="40" placeholder="e.g., order #123" />
+            </label>
+
+            <label class="full">
+              Description (optional)
+              <input id="description" type="text" maxlength="120" placeholder="e.g., Dinner with friends" />
+            </label>
+
+            <div class="full actions">
+              <button class="btn primary" type="submit">Pay Now</button>
+              <div class="inline right">
+                <span class="tiny">Tip:</span>
+                <span class="tiny">Budget rule + wallet check happen on Confirm.</span>
+              </div>
+            </div>
+          </form>
+
+          <div id="txAlerts" class="alerts" role="alert" aria-live="polite"></div>
+        </div>
+
+        <div>
+          <div class="confirm-card" aria-label="Confirm payment">
+            <div class="confirm-title">
+              Confirm Payment
+            </div>
+
+            <div class="confirm-summary">
+              <div class="confirm-item"><span class="confirm-key">Amount</span><span class="confirm-val" id="confirmAmount">-</span></div>
+              <div class="confirm-item"><span class="confirm-key">Category</span><span class="confirm-val" id="confirmCategory">-</span></div>
+              <div class="confirm-item"><span class="confirm-key">Date</span><span class="confirm-val" id="confirmDate">-</span></div>
+              <div class="confirm-item"><span class="confirm-key">Method</span><span class="confirm-val" id="confirmMethod">-</span></div>
+              <div class="confirm-item"><span class="confirm-key">Wallet After</span><span class="confirm-val" id="confirmWalletAfter">-</span></div>
+            </div>
+
+            <div id="confirmBudgetPreview" class="confirm-footnote"></div>
+
+            <div class="confirm-actions">
+              <button class="btn primary" type="button" id="confirmPaymentBtn" disabled>Confirm</button>
+              <button class="btn" type="button" id="cancelConfirmBtn" disabled>Cancel</button>
+            </div>
+
+            <div id="paymentStatus" class="payment-status" role="status" aria-live="polite"></div>
+          </div>
+
+          <div class="section-title" style="margin-top:14px">Recent Payment Rules</div>
+          <div class="alerts" style="margin-top:8px">
+            <div class="alert warn">Budget exceed rule applies at <b>Confirm</b> time (based on your current selected budget).</div>
+            <div class="alert">Wallet must be enough at <b>Confirm</b>. If not enough, payment is blocked.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card app-page" id="page-budget" data-page="budget" aria-label="Budget setup">
+      <div class="card-header">
+        <h2>Budget Setup (Optional)</h2>
+      </div>
+
+      <form id="budgetForm" class="grid-2" autocomplete="off">
+        <label>
+          Budget mode
+          <select id="budgetMode" required>
+            <option value="none" selected>Off (no budget)</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </label>
+
+        <label>
+          Budget total amount
+          <input id="budgetTotal" type="number" min="0" step="0.01" placeholder="e.g., 5000" />
+        </label>
+
+        <div class="full">
+          <div class="hint">
+            Category-based budgets are optional. If provided, the app shows them in the category summary,
+            while still tracking total spending vs total budget.
+          </div>
+        </div>
+
+        <div class="full">
+          <h3 class="section-title">Category Budgets (optional)</h3>
+        </div>
+
+        <label>
+          Food
+          <input id="budgetFood" type="number" min="0" step="0.01" placeholder="e.g., 1000" />
+        </label>
+        <label>
+          Travel
+          <input id="budgetTravel" type="number" min="0" step="0.01" placeholder="e.g., 800" />
+        </label>
+        <label>
+          Bills
+          <input id="budgetBills" type="number" min="0" step="0.01" placeholder="e.g., 600" />
+        </label>
+        <label>
+          Health
+          <input id="budgetHealth" type="number" min="0" step="0.01" placeholder="e.g., 400" />
+        </label>
+        <label>
+          Education
+          <input id="budgetEducation" type="number" min="0" step="0.01" placeholder="e.g., 300" />
+        </label>
+        <label>
+          Other
+          <input id="budgetOther" type="number" min="0" step="0.01" placeholder="e.g., 200" />
+        </label>
+
+        <div class="full grid-2">
+          <label class="inline">
+            <input id="blockOverBudget" type="checkbox" />
+            Block transactions that exceed the budget
+          </label>
+          <label class="inline">
+            <input id="seedSample" type="checkbox" checked />
+            Seed sample data on first run
+          </label>
+        </div>
+
+        <div class="full actions">
+          <button class="btn primary" type="submit">Save Budget</button>
+          <button class="btn" type="button" id="resetMonthlyBtn">Reset (Monthly)</button>
+          <button class="btn danger" type="button" id="clearAllBtn">Clear All Data</button>
+        </div>
+      </form>
+
+      <div class="budget-split">
+        <div class="card-header compact">
+          <h2>Monthly Account Split</h2>
+        </div>
+
+        <form id="splitForm" class="grid-2" autocomplete="off">
+          <label>
+            Month
+            <input id="splitMonth" type="month" required />
+          </label>
+
+          <label>
+            Account amount for month
+            <input id="splitAccountAmount" type="number" min="0" step="0.01" placeholder="e.g., 12000" />
+          </label>
+
+          <div class="full actions">
+            <button class="btn" type="button" id="useWalletForSplitBtn">Use Wallet Balance</button>
+          </div>
+
+          <div class="full">
+            <h3 class="section-title">Manual Category Split</h3>
+          </div>
+
+          <label>
+            Food
+            <input id="splitFood" type="number" min="0" step="0.01" placeholder="e.g., 3000" />
+          </label>
+          <label>
+            Travel
+            <input id="splitTravel" type="number" min="0" step="0.01" placeholder="e.g., 1500" />
+          </label>
+          <label>
+            Bills
+            <input id="splitBills" type="number" min="0" step="0.01" placeholder="e.g., 4000" />
+          </label>
+          <label>
+            Health
+            <input id="splitHealth" type="number" min="0" step="0.01" placeholder="e.g., 1000" />
+          </label>
+          <label>
+            Education
+            <input id="splitEducation" type="number" min="0" step="0.01" placeholder="e.g., 1200" />
+          </label>
+          <label>
+            Other
+            <input id="splitOther" type="number" min="0" step="0.01" placeholder="e.g., 800" />
+          </label>
+
+          <div class="full split-summary grid-3">
+            <div class="stat mini-stat">
+              <div class="stat-label">Allocated</div>
+              <div class="stat-value" id="splitAllocatedTotal">Rs. 0.00</div>
+            </div>
+            <div class="stat mini-stat">
+              <div class="stat-label">Unallocated</div>
+              <div class="stat-value" id="splitRemaining">Rs. 0.00</div>
+            </div>
+            <div class="stat mini-stat">
+              <div class="stat-label">Saved Month</div>
+              <div class="stat-value small-value" id="splitMonthStatus">Not saved</div>
+            </div>
+          </div>
+
+          <div class="full actions">
+            <button class="btn primary" type="submit">Apply Monthly Split</button>
+          </div>
+        </form>
+
+        <div id="splitAlerts" class="alerts" role="status" aria-live="polite"></div>
+      </div>
+
+      <div id="budgetAlerts" class="alerts" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="card app-page" id="page-transactions" data-page="transactions" aria-label="Transactions table">
+      <div class="card-header">
+        <h2>Transactions</h2>
+        <div class="toolbar">
+          <label class="inline">
+            <input type="checkbox" id="showOnlyThisPeriod" checked />
+            Show current budget period
+          </label>
+          <button class="btn" type="button" id="exportCsvBtn">Export CSV</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="txTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="footer-note">
+        Data persists in your browser (LocalStorage). This is a simulated payment tracker.
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
